@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { IconArrow, IconHeart } from './icons';
 import { getBookStatus } from '../constants/bookStatus';
+import { resolveMediaUrl } from '../services/client';
 
 export default function BookCard({ book, index = 0, onToggleFavorite }) {
   const status = getBookStatus(book.status);
@@ -9,7 +10,7 @@ export default function BookCard({ book, index = 0, onToggleFavorite }) {
     <div className="book-card" style={{ animationDelay: `${index * 0.04}s` }}>
       <div className="book-cover">
         {book.cover_url ? (
-          <img src={book.cover_url} alt={book.title} loading="lazy" />
+          <img src={resolveMediaUrl(book.cover_url)} alt={book.title} loading="lazy" />
         ) : (
           <div className="cover-placeholder">📖</div>
         )}
@@ -34,7 +35,7 @@ export default function BookCard({ book, index = 0, onToggleFavorite }) {
             {book.is_favorite ? 'Обране' : 'В обране'}
           </button>
 
-          <Link className="details-link" to={`/book/${book.id}`}>
+          <Link className="details-link" to={`/book/${book.user_book_id}`}>
             Детальніше <IconArrow />
           </Link>
         </div>

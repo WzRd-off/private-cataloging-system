@@ -1,22 +1,21 @@
 import { Pool } from 'pg'
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/library_db', // тут необходимо заменить на process.env.DATABASE_URL
-    })
+    connectionString: process.env.DATABASE_URL
+})
 
 pool.on('connect', () => {
     console.log('Успішне підключення до бази даних')
 })
 
 pool.on('error', (err) => {
-    console.log('Помилка при підключення до бази данних')
+    console.error('Помилка підключення до бази даних:', err)
     process.exit(-1)
 })
 
 export const db = {
-    query: (text, params) => {
-        return pool.query(text, params)
-    }
+    query: (text, params) => pool.query(text, params),
+    connect: () => pool.connect()
 }
 
 export default db

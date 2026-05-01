@@ -11,11 +11,26 @@ export const booksAPI = {
 
   getBookById: (id) => apiFetch(`/books/${id}`),
 
-  createBook: (bookData) =>
-    apiFetch('/books', {
+  createBook: (bookData, coverFile) => {
+    if (coverFile) {
+      const fd = new FormData();
+      Object.entries(bookData).forEach(([k, v]) => {
+        if (v !== null && v !== undefined) fd.append(k, v);
+      });
+      fd.append('cover', coverFile);
+      return apiFetch('/books', { method: 'POST', body: fd });
+    }
+    return apiFetch('/books', {
       method: 'POST',
       body: JSON.stringify(bookData),
-    }),
+    });
+  },
+
+  uploadCover: (id, coverFile) => {
+    const fd = new FormData();
+    fd.append('cover', coverFile);
+    return apiFetch(`/books/${id}/cover`, { method: 'POST', body: fd });
+  },
 
   updateBook: (id, bookData) =>
     apiFetch(`/books/${id}`, {
@@ -44,4 +59,8 @@ export const booksAPI = {
       method: 'POST',
       body: JSON.stringify({ text }),
     }),
+
+  getAuthors: () => apiFetch('/books/authors'),
+  getGenres: () => apiFetch('/books/genres'),
+  getStatuses: () => apiFetch('/books/statuses'),
 };

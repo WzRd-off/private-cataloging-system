@@ -1,33 +1,48 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { booksAPI } from '../services/books';
-import { BOOK_STATUSES } from '../constants/bookStatus';
-import { IconSearch, IconGrid, IconList, IconBook } from '../components/icons';
+import { useBookStatuses } from '../constants/bookStatus';
+import { useGenres } from '../hooks/useBookMetadata';
+import { IconSearch, IconGrid, IconList, IconBook, IconPlus } from '../components/icons';
 import BookCard from '../components/BookCard';
+import CreateBookModal from '../components/CreateBookModal';
+import MainLayout from '../components/layouts/MainLayout';
+
+function AddBookCard({ onClick }) {
+  return (
+    <button className="add-book-card" onClick={onClick} aria-label="Додати книгу">
+      <div className="add-book-icon">+</div>
+      <span className="add-book-label">Додати книгу</span>
+    </button>
+  );
+}
 
 export default function BookCatalog() {
+  const statuses = useBookStatuses();
+  const genres = useGenres();
   const [books, setBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterGenre, setFilterGenre] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const fetchBooks = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await booksAPI.getBooks({ status: filterStatus, genre: filterGenre });
+      setBooks(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filterStatus, filterGenre]);
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      setIsLoading(true);
-      try {
-        const data = await booksAPI.getBooks({ status: filterStatus, genre: filterGenre });
-        setBooks(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchBooks();
-  }, [filterStatus, filterGenre]);
+  }, [fetchBooks]);
 
   const handleToggleFavorite = useCallback(async (userBookId, currentFavoriteStatus) => {
     try {
@@ -42,6 +57,10 @@ export default function BookCatalog() {
     }
   }, []);
 
+  const handleBookCreated = useCallback(() => {
+    fetchBooks();
+  }, [fetchBooks]);
+
   const filteredBooks = useMemo(() => {
     if (!searchQuery) return books;
     const q = searchQuery.toLowerCase();
@@ -51,103 +70,119 @@ export default function BookCatalog() {
     );
   }, [books, searchQuery]);
 
-  const genres = useMemo(
-    () => [...new Set(books.map((b) => b.genre).filter(Boolean))],
-    [books],
-  );
-
   return (
-    <div className="catalog-container">
-      <div className="catalog-header">
-        <h1>
-          Моя <span>бібліотека</span>
-        </h1>
-        <p className="catalog-subtitle">
-          {isLoading ? 'Завантаження…' : `${filteredBooks.length} книг`}
-        </p>
-      </div>
-
-      <div className="catalog-toolbar">
-        <div className="search-wrapper">
-          <IconSearch />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Пошук за назвою або автором…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+    <MainLayout>
+      <div className="catalog-container">
+        <div className="catalog-header">
+          <h1>
+            Моя <span>бібліотека</span>
+          </h1>
+          <p className="catalog-subtitle">
+            {isLoading ? 'Завантаження…' : `${filteredBooks.length} книг`}
+          </p>
         </div>
 
-        <select
-          className="filter-select"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">Усі статуси</option>
-          {BOOK_STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="filter-select"
-          value={filterGenre}
-          onChange={(e) => setFilterGenre(e.target.value)}
-        >
-          <option value="">Усі жанри</option>
-          {genres.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-
-        <div className="toolbar-divider" />
-
-        <div className="view-toggle">
-          <button
-            className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-            onClick={() => setViewMode('grid')}
-            title="Сітка"
-          >
-            <IconGrid />
-          </button>
-          <button
-            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
-            title="Список"
-          >
-            <IconList />
-          </button>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="loader">
-          <div className="loader-spinner" />
-          <span>Завантажуємо книги…</span>
-        </div>
-      ) : filteredBooks.length === 0 ? (
-        <div className="empty-message">
-          <IconBook />
-          <h3>Книг не знайдено</h3>
-          <p>Спробуйте змінити пошуковий запит або фільтри</p>
-        </div>
-      ) : (
-        <div className={viewMode === 'grid' ? 'books-grid' : 'books-list'}>
-          {filteredBooks.map((book, idx) => (
-            <BookCard
-              key={book.user_book_id}
-              book={book}
-              index={idx}
-              onToggleFavorite={handleToggleFavorite}
+        <div className="catalog-toolbar">
+          <div className="search-wrapper">
+            <IconSearch />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Пошук за назвою або автором…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          ))}
+          </div>
+
+          <select
+            className="filter-select"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="">Усі статуси</option>
+            {statuses.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="filter-select"
+            value={filterGenre}
+            onChange={(e) => setFilterGenre(e.target.value)}
+          >
+            <option value="">Усі жанри</option>
+            {genres.map((g) => (
+              <option key={g.id} value={g.name}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+
+          <div className="toolbar-divider" />
+
+          <div className="view-toggle">
+            <button
+              className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Сітка"
+            >
+              <IconGrid />
+            </button>
+            <button
+              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="Список"
+            >
+              <IconList />
+            </button>
+          </div>
         </div>
-      )}
-    </div>
+
+        <div className={viewMode === 'grid' ? 'books-grid' : 'books-list'}>
+          <AddBookCard onClick={() => setIsCreateModalOpen(true)} />
+
+          {isLoading ? (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                color: 'var(--text-muted)',
+                padding: '32px 0',
+              }}
+            >
+              <div className="loader-spinner" />
+              <span>Завантажуємо книги…</span>
+            </div>
+          ) : (
+            filteredBooks.map((book, idx) => (
+              <BookCard
+                key={book.user_book_id}
+                book={book}
+                index={idx + 1}
+                onToggleFavorite={handleToggleFavorite}
+              />
+            ))
+          )}
+        </div>
+
+        {!isLoading && filteredBooks.length === 0 && (
+          <div className="empty-message">
+            <IconBook />
+            <h3>Книг не знайдено</h3>
+            <p>Спробуйте змінити пошуковий запит або натисніть «+» щоб додати першу книгу</p>
+          </div>
+        )}
+
+        <CreateBookModal
+          open={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleBookCreated}
+        />
+      </div>
+    </MainLayout>
   );
 }

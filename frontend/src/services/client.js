@@ -1,4 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_NODE_URL || 'http://localhost:8000';
+const SERVER_BASE_URL = import.meta.env.VITE_NODE_URL || 'http://localhost:8000';
+const API_BASE_URL = SERVER_BASE_URL + '/api';
+
+export const resolveMediaUrl = (url) => {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${SERVER_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 const jsonHeaders = () => ({ 'Content-Type': 'application/json' });
 
@@ -19,7 +26,7 @@ async function parseError(response) {
     return new Error(`Ошибка валидации: ${errors}`);
   }
 
-  return new Error(errorData.detail || `Ошибка ${response.status}`);
+  return new Error(errorData.message || errorData.detail || `Ошибка ${response.status}`);
 }
 
 export const apiFetch = async (endpoint, options = {}) => {

@@ -1,30 +1,34 @@
 import { Router } from 'express'
 import { authMiddleware } from '../middleware/auth.middleware.js'
+import { uploadImage } from '../middleware/upload.middleware.js'
 import bookController from '../controllers/book.controller.js'
 
 const router = Router()
 
-router.use(authMiddleware);
+router.use(authMiddleware)
 
-// Отримати всі книги користувача (з підтримкою фільтрів у query параметрах)
+// Довідники — мають бути до маршруту /:id
+router.get('/authors', bookController.getAuthors)
+router.get('/genres', bookController.getGenres)
+router.get('/statuses', bookController.getStatuses)
+
+// Книги користувача
 router.get('/', bookController.getAllBooks)
+router.post('/', uploadImage.single('cover'), bookController.createBook)
+router.get('/:id', bookController.getBookById)
+router.put('/:id', bookController.updateBook)
+router.delete('/:id', bookController.deleteBook)
+router.post('/:id/cover', uploadImage.single('cover'), bookController.uploadCover)
 
-// Отримати конкретну книгу по id з бібліотеки користувача
-router.get('/:id', bookController.getBookById) 
-
-// Додати книгу в свою бібліотеку
-router.post('/', bookController.createBook) 
-
-// Редагувати дані примірника (рейтинг, статус)
-router.put('/:id', bookController.updateBook) 
-
-// Маркерувати книгу як позичену (створює контакт)
+// Позичання та повернення
 router.post('/:id/borrow', bookController.borrowBook)
-
-// Повернути книгу (видаляє контакт і повертає старий статус)
 router.post('/:id/return', bookController.returnBook)
 
-// Додати або видалити з обраного
+// Обране
 router.put('/:id/favorite', bookController.toggleFavorite)
+
+// Замітки
+router.get('/:id/notes', bookController.getNotes)
+router.post('/:id/notes', bookController.addNote)
 
 export default router

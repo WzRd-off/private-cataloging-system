@@ -4,14 +4,14 @@ export const profileAPI = {
   getMyProfile: () => apiFetch('/profile/'),
 
   updateProfile: (name, email, phone) =>
-    apiFetch('/profile/update', {
+    apiFetch('/profile/', {
       method: 'PUT',
       body: JSON.stringify({ name, email, phone }),
     }),
 
   changePassword: (oldPassword, newPassword) =>
-    apiFetch('/profile/change-password', {
-      method: 'POST',
+    apiFetch('/profile/password', {
+      method: 'PUT',
       body: JSON.stringify({ oldPassword, newPassword }),
     }),
 

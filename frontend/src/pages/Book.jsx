@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 
 import { booksAPI } from '../services/books';
-import { BOOK_STATUSES, getBookStatus } from '../constants/bookStatus';
+import { resolveMediaUrl } from '../services/client';
+import { useBookStatuses, getBookStatus } from '../constants/bookStatus';
 import {
   IconBack,
   IconHeart,
@@ -13,10 +14,12 @@ import {
 } from '../components/icons';
 import BorrowModal from '../components/BorrowModal';
 import NotesSection from '../components/NotesSection';
+import MainLayout from '../components/layouts/MainLayout';
 
 export default function Book() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const statuses = useBookStatuses();
 
   const [book, setBook] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -85,7 +88,11 @@ export default function Book() {
   const handleBorrow = async (form) => {
     try {
       const data = await booksAPI.borrowBook(id, form);
-      setBook((prev) => ({ ...prev, status: 'lent', lent_to_name: form.name, ...data }));
+      setBook((prev) => ({
+        ...prev,
+        status: data.status ?? 'В займах',
+        lent_to_name: data.lent_to_name ?? form.name,
+      }));
       setIsBorrowModalOpen(false);
     } catch {
       console.error('Помилка передачі книги');
@@ -95,9 +102,24 @@ export default function Book() {
   const handleReturn = async () => {
     try {
       const data = await booksAPI.returnBook(id);
-      setBook((prev) => ({ ...prev, status: data.status ?? 'unread', lent_to_name: null }));
+      setBook((prev) => ({ ...prev, status: data.status ?? 'Не читав', lent_to_name: null }));
     } catch {
       console.error('Помилка повернення');
+    }
+  };
+
+  const handleCoverChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    try {
+      const data = await booksAPI.uploadCover(id, file);
+      setBook((prev) => ({ ...prev, cover_url: data.cover_url }));
+      showSaved();
+    } catch (err) {
+      console.error('Помилка завантаження обкладинки:', err);
     }
   };
 
@@ -112,27 +134,31 @@ export default function Book() {
 
   if (isLoading) {
     return (
-      <div className="book-page">
-        <div className="page-loader">
-          <div className="loader-ring" />
-          <span>Завантажуємо книгу…</span>
+      <MainLayout>
+        <div className="book-page">
+          <div className="page-loader">
+            <div className="loader-ring" />
+            <span>Завантажуємо книгу…</span>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (notFound || !book) {
     return (
-      <div className="book-page">
-        <div className="error-container">
-          <IconBookError />
-          <h2>Книгу не знайдено</h2>
-          <p>Можливо, вона була видалена або вказано невірний ідентифікатор.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/catalog')}>
-            <IconBack /> Повернутись до каталогу
-          </button>
+      <MainLayout>
+        <div className="book-page">
+          <div className="error-container">
+            <IconBookError />
+            <h2>Книгу не знайдено</h2>
+            <p>Можливо, вона була видалена або вказано невірний ідентифікатор.</p>
+            <button className="btn btn-primary" onClick={() => navigate('/')}>
+              <IconBack /> Повернутись до каталогу
+            </button>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
@@ -140,6 +166,7 @@ export default function Book() {
   const status = getBookStatus(book.status);
 
   return (
+    <MainLayout>
     <div className="book-page">
       <div className="book-header">
         <Link className="back-btn" to="/catalog">
@@ -167,10 +194,19 @@ export default function Book() {
         <div className="book-aside">
           <div className="book-cover-wrap">
             {book.cover_url ? (
-              <img src={book.cover_url} alt={book.title} />
+              <img src={resolveMediaUrl(book.cover_url)} alt={book.title} />
             ) : (
               <div className="cover-placeholder">📖</div>
             )}
+            <label className="btn btn-ghost cover-upload-btn">
+              {book.cover_url ? 'Замінити обкладинку' : 'Завантажити обкладинку'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverChange}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
 
           <div className="rating-card">
@@ -239,10 +275,10 @@ export default function Book() {
               <label>Статус</label>
               <select
                 className="status-select"
-                value={book.status || 'unread'}
+                value={book.status || 'Не читав'}
                 onChange={handleStatusChange}
               >
-                {BOOK_STATUSES.map((o) => (
+                {statuses.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -253,7 +289,7 @@ export default function Book() {
 
             <div className="manage-row">
               <label>Місце</label>
-              {book.status === 'lent' ? (
+              {book.status === 'В займах' ? (
                 <>
                   <div className="borrow-info">
                     <IconUser />
@@ -298,5 +334,6 @@ export default function Book() {
         onSubmit={handleBorrow}
       />
     </div>
+    </MainLayout>
   );
 }
