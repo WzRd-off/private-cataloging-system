@@ -29,3 +29,6 @@ out/
 .DS_Store
 .idea/
 .vscode/
+
+# Завантажені файли
+backend/images/
