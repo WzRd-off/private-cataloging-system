@@ -38,6 +38,8 @@ export const booksAPI = {
       body: JSON.stringify(bookData),
     }),
 
+  deleteBook: (id) => apiFetch(`/books/${id}`, { method: 'DELETE' }),
+
   borrowBook: (id, borrowData) =>
     apiFetch(`/books/${id}/borrow`, {
       method: 'POST',
@@ -63,4 +65,9 @@ export const booksAPI = {
   getAuthors: () => apiFetch('/books/authors'),
   getGenres: () => apiFetch('/books/genres'),
   getStatuses: () => apiFetch('/books/statuses'),
+  updateRating: (id, rating) =>
+    apiFetch(`/books/rating/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ rating }),
+    }),
 };

@@ -10,6 +10,7 @@ const EMPTY_FORM = {
   description: '',
   author_name: '',
   genre_name: '',
+  publication_year: '',
   status: 'Не читав',
   rating: '',
   is_favorite: false,
@@ -90,6 +91,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
         title: form.title.trim(),
         isbn: form.isbn.trim() || null,
         description: form.description.trim() || null,
+        publication_year: form.publication_year ? Number(form.publication_year) : null,
         author_id,
         genre_id,
         status: form.status,
@@ -190,6 +192,20 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
                 placeholder="978-3-16-148410-0"
                 value={form.isbn}
                 onChange={set('isbn')}
+              />
+            </div>
+
+            <div className="modal-fg">
+              <label htmlFor="cb-year">Рік видання</label>
+              <input
+                id="cb-year"
+                className="modal-input"
+                type="number"
+                min="1000"
+                max="2100"
+                placeholder="2024"
+                value={form.publication_year}
+                onChange={set('publication_year')}
               />
             </div>
 

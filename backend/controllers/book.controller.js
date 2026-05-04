@@ -22,7 +22,7 @@ class BookController {
 
             let stmt = `
                 SELECT
-                    ub.id as user_book_id, ub.title, ub.isbn, ub.cover_url,
+                    ub.id as user_book_id, ub.title, ub.isbn, ub.cover_url, ub.publication_year,
                     a.name as author, g.name as genre, bs.name as status,
                     ub.rating, ub.is_favorite
                 FROM user_books ub
@@ -64,9 +64,9 @@ class BookController {
 
             const stmt = `
                 SELECT
-                    ub.id as user_book_id, ub.title, ub.isbn, ub.description, ub.cover_url,
+                    ub.id as user_book_id, ub.title, ub.isbn, ub.description, ub.cover_url, ub.publication_year,
                     a.name as author, g.name as genre, bs.name as status,
-                    ub.rating, ub.is_favorite, c.name as lent_to_name
+                    ub.rating, ub.is_favorite, c.name as lent_to_name, c.expected_return_date
                 FROM user_books ub
                 LEFT JOIN authors a ON ub.author_id = a.id
                 LEFT JOIN genres g ON ub.genre_id = g.id
@@ -91,7 +91,7 @@ class BookController {
         try {
             const userId = req.user.id
             const {
-                title, isbn, description,
+                title, isbn, description, publication_year,
                 author_id, genre_id, status_id, status,
                 rating, is_favorite
             } = req.body
@@ -110,12 +110,12 @@ class BookController {
 
             const { rows } = await db.query(
                 `INSERT INTO user_books
-                 (user_id, title, isbn, description, cover_url, author_id, genre_id, status_id, rating, is_favorite)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                 (user_id, title, isbn, description, cover_url, publication_year, author_id, genre_id, status_id, rating, is_favorite)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                  RETURNING id`,
                 [
                     userId, title, isbn || null, description || null, coverUrl,
-                    toInt(author_id), toInt(genre_id), resolvedStatusId,
+                    toInt(publication_year), toInt(author_id), toInt(genre_id), resolvedStatusId,
                     toInt(rating), toBool(is_favorite)
                 ]
             )
@@ -213,7 +213,7 @@ class BookController {
         try {
             const userId = req.user.id
             const userBookId = req.params.id
-            const { name, email, phone } = req.body
+            const { name, email, phone, expected_return_date } = req.body
 
             if (!name) {
                 return res.status(400).json({ message: 'Ім\'я контакту обов\'язкове' })
@@ -247,8 +247,8 @@ class BookController {
             }
 
             const { rows: contactRows } = await client.query(
-                'INSERT INTO contacts (user_id, name, email, phone) VALUES ($1, $2, $3, $4) RETURNING id',
-                [userId, name, email || null, phone || null]
+                'INSERT INTO contacts (user_id, name, email, phone, expected_return_date) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [userId, name, email || null, phone || null, expected_return_date || null]
             )
             const contactId = contactRows[0].id
 
@@ -432,6 +432,36 @@ class BookController {
             res.status(201).json(rows[0])
         } catch (error) {
             console.error('Помилка додавання замітки:', error)
+            res.status(500).json({ message: 'Внутрішня помилка сервера' })
+        }
+    }
+
+    async updateRating(req, res) {
+        try {
+            const userId = req.user.id
+            const userBookId = req.params.id
+            const { rating } = req.body
+
+            const numericRating = parseInt(rating, 10)
+            if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+                return res.status(400).json({ message: 'Недійсний рейтинг. Введіть число від 1 до 5' })
+            }
+
+            const { rows } = await db.query(
+                `UPDATE user_books
+                 SET rating = $1
+                 WHERE id = $2 AND user_id = $3
+                 RETURNING id, rating`,
+                [numericRating, userBookId, userId]
+            )
+
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'Книгу не знайдено' })
+            }
+
+            res.json({ message: 'Рейтинг оновлено', rating: rows[0].rating })
+        } catch (error) {
+            console.error('Помилка оновлення рейтингу:', error)
             res.status(500).json({ message: 'Внутрішня помилка сервера' })
         }
     }

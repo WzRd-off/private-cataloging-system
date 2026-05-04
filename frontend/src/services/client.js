@@ -48,3 +48,26 @@ export const apiFetch = async (endpoint, options = {}) => {
     throw error;
   }
 };
+
+export const apiDownload = async (endpoint, filename) => {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers,
+    credentials: 'include',
+  });
+
+  if (!response.ok) throw await parseError(response);
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};

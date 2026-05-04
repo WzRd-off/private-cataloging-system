@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, apiDownload } from './client';
 
 export const profileAPI = {
   getMyProfile: () => apiFetch('/profile/'),
@@ -15,5 +15,23 @@ export const profileAPI = {
       body: JSON.stringify({ oldPassword, newPassword }),
     }),
 
-  getProfileStats: () => apiFetch('/profile/stats'),
+  getProfileStats: (period) => {
+    const params = new URLSearchParams();
+    if (period) params.append('period', period);
+    return apiFetch(`/profile/stats?${params.toString()}`);
+  },
+
+  exportBooks: (format) => {
+    const ext = format === 'pdf' ? 'pdf' : 'csv';
+    return apiDownload(`/profile/export?format=${format}`, `books_${Date.now()}.${ext}`);
+  },
+  exportStats: (format, period) => {
+    const params = new URLSearchParams({ format });
+    if (period) params.append('period', period);
+    const ext = format === 'pdf' ? 'pdf' : 'csv';
+    return apiDownload(
+      `/profile/export-stats?${params.toString()}`,
+      `stats_${period || 'all'}_${Date.now()}.${ext}`,
+    );
+  },
 };

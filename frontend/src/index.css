@@ -911,6 +911,9 @@ img {
 
 .book-header-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .fav-btn {
@@ -937,6 +940,37 @@ img {
   background: #fce8e8;
   border-color: #e06b6b;
   color: #b84040;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--t-base);
+}
+
+.delete-btn:hover {
+  border-color: #d33b3b;
+  background: #fbeaea;
+  color: #d33b3b;
+  transform: scale(1.08);
+}
+
+.delete-btn:active {
+  transform: scale(0.96);
+  background: #f5d4d4;
+}
+
+.delete-btn:focus-visible {
+  outline: 2px solid #d33b3b;
+  outline-offset: 2px;
 }
 
 /* ── Main grid ── */

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { IconClose, IconUser } from './icons';
 
-const EMPTY_FORM = { name: '', phone: '', email: '' };
+const EMPTY_FORM = { name: '', phone: '', email: '', expected_return_date: '' };
 
 export default function BorrowModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -65,6 +65,16 @@ export default function BorrowModal({ open, onClose, onSubmit }) {
               placeholder="example@mail.com"
               value={form.email}
               onChange={handleField('email')}
+            />
+          </div>
+          <div className="modal-fg">
+            <label htmlFor="borrow-return-date">Очікувана дата повернення</label>
+            <input
+              id="borrow-return-date"
+              className="modal-input"
+              type="date"
+              value={form.expected_return_date}
+              onChange={handleField('expected_return_date')}
             />
           </div>
           <div className="modal-actions">

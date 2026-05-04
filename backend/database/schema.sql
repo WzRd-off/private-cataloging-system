@@ -41,7 +41,8 @@ CREATE TABLE contacts (
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
-    phone VARCHAR(255)
+    phone VARCHAR(255),
+    expected_return_date DATE
 );
 
 -- Персональні примірники користувачів (поглинає колишню таблицю books)
@@ -52,13 +53,15 @@ CREATE TABLE user_books (
     isbn VARCHAR(20),
     description TEXT,
     cover_url TEXT,
+    publication_year INT,
     author_id INT REFERENCES authors(id) ON DELETE SET NULL,
     genre_id INT REFERENCES genres(id) ON DELETE SET NULL,
     previous_status_id INT REFERENCES book_statuses(id) DEFAULT NULL,
     status_id INT REFERENCES book_statuses(id),
-    rating INT CHECK (rating BETWEEN 1 AND 5),
+    rating INT CHECK (rating BETWEEN 1 AND 5) DEFAULT NULL,
     is_favorite BOOLEAN DEFAULT FALSE,
-    lent_to_contact_id INT REFERENCES contacts(id) ON DELETE SET NULL
+    lent_to_contact_id INT REFERENCES contacts(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE notes (

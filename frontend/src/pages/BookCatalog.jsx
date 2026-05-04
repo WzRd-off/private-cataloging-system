@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { booksAPI } from '../services/books';
+import { profileAPI } from '../services/profile';
 import { useBookStatuses } from '../constants/bookStatus';
 import { useGenres } from '../hooks/useBookMetadata';
-import { IconSearch, IconGrid, IconList, IconBook, IconPlus } from '../components/icons';
+import { IconSearch, IconGrid, IconList, IconBook } from '../components/icons';
 import BookCard from '../components/BookCard';
 import CreateBookModal from '../components/CreateBookModal';
 import MainLayout from '../components/layouts/MainLayout';
@@ -27,6 +28,7 @@ export default function BookCatalog() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterGenre, setFilterGenre] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchBooks = useCallback(async () => {
     setIsLoading(true);
@@ -60,6 +62,18 @@ export default function BookCatalog() {
   const handleBookCreated = useCallback(() => {
     fetchBooks();
   }, [fetchBooks]);
+
+  const handleExport = async (format) => {
+    setIsExporting(true);
+    try {
+      await profileAPI.exportBooks(format);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Помилка при експорті файлу');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const filteredBooks = useMemo(() => {
     if (!searchQuery) return books;
@@ -121,6 +135,25 @@ export default function BookCatalog() {
           </select>
 
           <div className="toolbar-divider" />
+
+          <div className="export-buttons">
+            <button
+              onClick={() => handleExport('csv')}
+              disabled={isExporting}
+              title="Експорт CSV"
+              className="btn btn-secondary"
+            >
+              📥 CSV
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting}
+              title="Експорт PDF"
+              className="btn btn-secondary"
+            >
+              📄 PDF
+            </button>
+          </div>
 
           <div className="view-toggle">
             <button

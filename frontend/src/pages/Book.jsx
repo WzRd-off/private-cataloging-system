@@ -11,6 +11,7 @@ import {
   IconReturn,
   IconCheck,
   IconBookError,
+  IconTrash,
 } from '../components/icons';
 import BorrowModal from '../components/BorrowModal';
 import NotesSection from '../components/NotesSection';
@@ -68,7 +69,7 @@ export default function Book() {
   const handleRatingChange = async (rating) => {
     setBook((prev) => ({ ...prev, rating }));
     try {
-      await booksAPI.updateBook(id, { rating });
+      await booksAPI.updateRating(id, rating);
       showSaved();
     } catch {
       console.error('Помилка зміни рейтингу');
@@ -120,6 +121,19 @@ export default function Book() {
       showSaved();
     } catch (err) {
       console.error('Помилка завантаження обкладинки:', err);
+    }
+  };
+
+  const handleDeleteBook = async () => {
+    if (!window.confirm(`Видалити книгу "${book.title}"? Цю дію не можна скасувати.`)) {
+      return;
+    }
+    try {
+      await booksAPI.deleteBook(id);
+      navigate('/catalog');
+    } catch (err) {
+      console.error('Помилка видалення книги:', err);
+      alert('Не вдалося видалити книгу');
     }
   };
 
@@ -187,6 +201,13 @@ export default function Book() {
           >
             <IconHeart filled={book.is_favorite} />
           </button>
+          <button
+            className="delete-btn"
+            onClick={handleDeleteBook}
+            title="Видалити книгу"
+          >
+            <IconTrash />
+          </button>
         </div>
       </div>
 
@@ -211,6 +232,7 @@ export default function Book() {
 
           <div className="rating-card">
             <p className="rating-label">Ваша оцінка</p>
+            
             <div className="stars">
               {[1, 2, 3, 4, 5].map((star) => (
                 <span
