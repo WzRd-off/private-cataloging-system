@@ -146,3 +146,26 @@ export const IconChart = (props) => (
     <line x1="6" y1="20" x2="6" y2="14" />
   </Icon>
 );
+
+export const IconSparkles = (props) => (
+  <Icon size={16} {...props}>
+    <path d="M12 3l1.8 3.7L18 8.5l-3.1 2.8.8 4.2L12 13.6l-3.7 1.9.8-4.2L6 8.5l4.2-1.8L12 3z" />
+    <path d="M5 3v2" />
+    <path d="M4 4h2" />
+    <path d="M19 15v2" />
+    <path d="M18 16h2" />
+  </Icon>
+);
+
+export const IconStarOutline = (props) => (
+  <Icon {...props}>
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </Icon>
+);
+
+// Желтая звезда (залитая)
+export const IconStarFilled = (props) => (
+  <Icon fill="#FFD700" stroke="#FFD700" {...props}>
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </Icon>
+);

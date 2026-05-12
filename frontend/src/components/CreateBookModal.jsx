@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { booksAPI } from '../services/books';
 import { useBookStatuses } from '../constants/bookStatus';
 import { useAuthors, useGenres, invalidateAuthors, invalidateGenres } from '../hooks/useBookMetadata';
-import { IconClose, IconPlus } from './icons';
+import { IconClose, IconPlus, IconSearch} from './icons';
 
 const EMPTY_FORM = {
   title: '',
@@ -24,6 +24,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
   const genres = useGenres();
   const statuses = useBookStatuses();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
 
   const selectableStatuses = useMemo(
@@ -40,6 +41,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
     setCoverFile(null);
     setCoverPreview('');
     setError('');
+    setIsSearching(false);
   }, [open, statuses]);
 
   useEffect(() => {
@@ -74,6 +76,34 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleSearchExternal = async (type) => {
+    const query = type === 'title' ? form.title : form.isbn;
+    if (!query.trim()) {
+      setError(`Введіть ${type === 'title' ? 'назву' : 'ISBN'} для пошуку`);
+      return;
+    }
+
+    setIsSearching(true);
+    setError('');
+
+    try {
+      const data = await booksAPI.externalSearch(query.trim(), type);
+      setForm((prev) => ({
+        ...prev,
+        title: prev.title || data.title || '',
+        isbn: prev.isbn || data.isbn || '',
+        description: prev.description || data.description || '',
+        author_name: prev.author_name || data.author_name || '',
+        genre_name: prev.genre_name || data.genre_name || '',
+        publication_year: prev.publication_year || (data.publication_year ? String(data.publication_year) : '')
+      }));
+    } catch (err) {
+      setError('Не знайдено');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
@@ -83,7 +113,6 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
     setIsSubmitting(true);
     setError('');
     try {
-      // Resolve text names to IDs — null if no match (new value or left blank)
       const author_id = authors.find((a) => a.name === form.author_name)?.id ?? null;
       const genre_id = genres.find((g) => g.name === form.genre_name)?.id ?? null;
 
@@ -131,16 +160,27 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
 
             <div className="modal-fg modal-fg--full">
               <label htmlFor="cb-title">Назва *</label>
-              <input
-                id="cb-title"
-                className="modal-input"
-                type="text"
-                required
-                placeholder="Назва книги"
-                value={form.title}
-                onChange={set('title')}
-                autoFocus
-              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  id="cb-title"
+                  className="modal-input"
+                  type="text"
+                  required
+                  placeholder="Назва книги"
+                  value={form.title}
+                  onChange={set('title')}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => handleSearchExternal('title')}
+                  disabled={isSearching || !form.title.trim()}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  <IconSearch />
+                </button>
+              </div>
             </div>
 
             <div className="modal-fg">
@@ -185,14 +225,25 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
 
             <div className="modal-fg">
               <label htmlFor="cb-isbn">ISBN</label>
-              <input
-                id="cb-isbn"
-                className="modal-input"
-                type="text"
-                placeholder="978-3-16-148410-0"
-                value={form.isbn}
-                onChange={set('isbn')}
-              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  id="cb-isbn"
+                  className="modal-input"
+                  type="text"
+                  placeholder="978-3-16-148410-0"
+                  value={form.isbn}
+                  onChange={set('isbn')}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => handleSearchExternal('isbn')}
+                  disabled={isSearching || !form.isbn.trim()}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  <IconSearch />
+                </button>
+              </div>
             </div>
 
             <div className="modal-fg">

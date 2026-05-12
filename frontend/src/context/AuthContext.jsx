@@ -99,7 +99,6 @@ export function AuthProvider({ children }) {
     register,
     logout,
     isAuthenticated: !!user,
-    userRole: user?.role_id,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

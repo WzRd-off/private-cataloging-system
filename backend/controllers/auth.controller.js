@@ -19,8 +19,8 @@ class AuthController {
 
             const hashedPassword = await bcrypt.hash(password, 10)
             await db.query(
-                'INSERT INTO users (name, email, phone, role_id, password_hash) VALUES ($1, $2, $3, $4, $5)',
-                [name, email, phone, 1, hashedPassword]
+                'INSERT INTO users (name, email, phone, password_hash) VALUES ($1, $2, $3, $4)',
+                [name, email, phone, hashedPassword]
             )
 
             res.status(201).json({ status: 'success', message: 'Користувача успішно зареєстровано' })
@@ -49,7 +49,7 @@ class AuthController {
             }
 
             const token = jwt.sign(
-                { id: user.id, role_id: user.role_id },
+                { id: user.id },
                 JWT_SECRET,
                 { expiresIn: '24h' }
             )

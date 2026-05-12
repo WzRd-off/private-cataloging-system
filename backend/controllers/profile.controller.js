@@ -13,11 +13,7 @@ const __dirname = path.dirname(__filename)
 // Покладіть DejaVuSans.ttf у backend/assets/fonts/.
 const CYRILLIC_FONT_PATH = path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans.ttf')
 
-function applyPdfFont(doc) {
-    if (fs.existsSync(CYRILLIC_FONT_PATH)) {
-        doc.font(CYRILLIC_FONT_PATH)
-    }
-}
+
 
 class ProfileController {
     async getProfile(req, res) {
@@ -25,10 +21,8 @@ class ProfileController {
             const userId = req.user.id
 
             const { rows } = await db.query(
-                `SELECT u.id, u.name, u.email, u.phone, u.status, u.created_at,
-                        r.name as role
+                `SELECT u.id, u.name, u.email, u.phone, u.status, u.created_at
                  FROM users u
-                 LEFT JOIN roles r ON u.role_id = r.id
                  WHERE u.id = $1`,
                 [userId]
             )
@@ -220,7 +214,6 @@ class ProfileController {
                 res.setHeader('Content-Type', 'application/pdf')
                 res.setHeader('Content-Disposition', `attachment; filename="stats_${period || 'all'}_${Date.now()}.pdf"`)
                 doc.pipe(res)
-                applyPdfFont(doc)
 
                 doc.fontSize(16).text('Статистика читання', { align: 'center' })
                 doc.moveDown()
@@ -286,7 +279,6 @@ class ProfileController {
                 res.setHeader('Content-Type', 'application/pdf')
                 res.setHeader('Content-Disposition', `attachment; filename="books_${Date.now()}.pdf"`)
                 doc.pipe(res)
-                applyPdfFont(doc)
 
                 doc.fontSize(16).text('Каталог книг', { align: 'center' })
                 doc.moveDown()

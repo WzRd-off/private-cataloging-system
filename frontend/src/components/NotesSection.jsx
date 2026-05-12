@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { IconPlus } from './icons';
+import { IconPlus, IconTrash } from './icons';
 import { formatDate } from '../utils/format';
+import { booksAPI } from '../services/books';
 
-export default function NotesSection({ notes, onAdd }) {
+
+export default function NotesSection({ book_id, notes, onAdd, onDelete }) {
   const [draft, setDraft] = useState('');
 
   const handleAdd = async () => {
@@ -35,6 +37,15 @@ export default function NotesSection({ notes, onAdd }) {
               <p className="note-text">{note.text}</p>
               {note.created_at && (
                 <p className="note-date">{formatDate(note.created_at)}</p>
+              )}
+              {note.id && (
+                <button 
+                  className="note-delete-btn" 
+                  onClick={() => onDelete(note.id)}
+                  title="Видалити замітку"
+                >
+                  <IconTrash size={16}  />
+                </button>
               )}
             </div>
           ))}

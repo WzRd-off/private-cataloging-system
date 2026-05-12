@@ -70,4 +70,12 @@ export const booksAPI = {
       method: 'PUT',
       body: JSON.stringify({ rating }),
     }),
+  deleteNote: (bookId, noteId) =>
+    apiFetch(`/books/${bookId}/notes/${noteId}`, {
+      method: 'DELETE',
+    }),
+  externalSearch: (query, type) => {
+    const params = new URLSearchParams({ query, type });
+    return apiFetch(`/books/book/external?${params.toString()}`);
+  }
 };

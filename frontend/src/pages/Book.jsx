@@ -12,6 +12,8 @@ import {
   IconCheck,
   IconBookError,
   IconTrash,
+  IconStarOutline,
+  IconStarFilled,
 } from '../components/icons';
 import BorrowModal from '../components/BorrowModal';
 import NotesSection from '../components/NotesSection';
@@ -55,34 +57,40 @@ export default function Book() {
     Promise.all([fetchBook(), fetchNotes()]).finally(() => setIsLoading(false));
   }, [fetchBook, fetchNotes]);
 
-  const handleStatusChange = async (e) => {
+const handleStatusChange = async (e) => {
     const status = e.target.value;
+    const previousStatus = book.status; 
     setBook((prev) => ({ ...prev, status }));
     try {
       await booksAPI.updateBook(id, { status });
       showSaved();
     } catch {
       console.error('Помилка зміни статусу');
+      setBook((prev) => ({ ...prev, status: previousStatus })); 
     }
   };
 
   const handleRatingChange = async (rating) => {
+    const previousRating = book.rating; 
     setBook((prev) => ({ ...prev, rating }));
     try {
       await booksAPI.updateRating(id, rating);
       showSaved();
     } catch {
       console.error('Помилка зміни рейтингу');
+      setBook((prev) => ({ ...prev, rating: previousRating })); 
     }
   };
 
   const handleToggleFavorite = async () => {
+    const previousFavorite = book.is_favorite;
     const next = !book.is_favorite;
     setBook((prev) => ({ ...prev, is_favorite: next }));
     try {
       await booksAPI.toggleFavorite(id, next);
     } catch {
       console.error('Помилка обраного');
+      setBook((prev) => ({ ...prev, is_favorite: previousFavorite })); 
     }
   };
 
@@ -143,6 +151,15 @@ export default function Book() {
       setNotes((prev) => [note, ...prev]);
     } catch {
       console.error('Помилка додавання замітки');
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      await booksAPI.deleteNote(id, noteId);
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
+    } catch {
+      console.error('Помилка видалення замітки');
     }
   };
 
@@ -244,7 +261,11 @@ export default function Book() {
                   role="button"
                   aria-label={`${star} зірок`}
                 >
-                  ⭐
+                  {star <= displayRating ? (
+                    <IconStarFilled size={24} /> // Желтая
+                  ) : (
+                    <IconStarOutline size={24} /> // Пустая
+                  )}
                 </span>
               ))}
             </div>
@@ -348,7 +369,7 @@ export default function Book() {
         </div>
       </div>
 
-      <NotesSection notes={notes} onAdd={handleAddNote} />
+      <NotesSection book_id={book.user_book_id} notes={notes} onAdd={handleAddNote} onDelete={handleDeleteNote} />
 
       <BorrowModal
         open={isBorrowModalOpen}

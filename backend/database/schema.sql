@@ -5,12 +5,6 @@ CREATE TABLE book_statuses (
     name VARCHAR(50) NOT NULL  -- Не читав, Читаю, Прочитано, В займах
 );
 
--- Роли користувачів
-CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(20) UNIQUE NOT NULL -- Користувач, Адмін
-);
-
 -- Перелік літературних жанрів
 CREATE TABLE genres (
     id SERIAL PRIMARY KEY,
@@ -30,7 +24,6 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role_id INT REFERENCES roles(id) ON DELETE SET NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -45,7 +38,7 @@ CREATE TABLE contacts (
     expected_return_date DATE
 );
 
--- Персональні примірники користувачів (поглинає колишню таблицю books)
+-- Персональні примірники користувачів
 CREATE TABLE user_books (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -71,15 +64,20 @@ CREATE TABLE notes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO book_statuses (name) VALUES
 ('Не читав'),
 ('Читаю'),
 ('Прочитано'),
 ('В займах');
-
-INSERT INTO roles (name) VALUES
-('Користувач'),
-('Адмін');
 
 INSERT INTO genres (name) VALUES
 ('Фантастика'),
@@ -90,3 +88,52 @@ INSERT INTO genres (name) VALUES
 ('Історія'),
 ('Психологія'),
 ('Саморозвиток');
+
+INSERT INTO authors (name) VALUES
+('Айзек Азімов'),
+('Агата Крісті'),
+('Джордж Орвелл'),
+('Деніел Канеман'),
+('Стівен Кові');
+
+INSERT INTO users (name, email, phone, password_hash, status) VALUES
+('Іван Петренко', 'ivan@example.com', '+380501112233', '$2b$10$C3WMFGeoP3lECIZOOdf.d.fXzoro3EPLE.jLYvYDLEpLUj/CiLJEG', 'active'),
+('Олена Коваль', 'olena@example.com', '+380502223344', '$2b$10$zi8u5xLoP8uq3IhDgU5K5ONHooAGe485gy3BtOCaaoQcw1Q1W.UwS', 'active'),
+('Адмін Системи', 'admin@example.com', '+380503334455', '$2b$10$v5q.qHHeWsMvscp9WXHq8uMxqt8QVCdWx2sHnMUxfBveJ4fHLsiSu', 'active');
+
+INSERT INTO contacts (user_id, name, email, phone, expected_return_date) VALUES
+(1, 'Андрій Мельник', 'andriy.melnyk@example.com', '+380671234567', CURRENT_DATE + INTERVAL '7 day'),
+(1, 'Марія Шевченко', 'maria.shevchenko@example.com', '+380681234568', CURRENT_DATE + INTERVAL '14 day'),
+(2, 'Сергій Бондар', 'serhii.bondar@example.com', '+380691234569', CURRENT_DATE + INTERVAL '10 day');
+
+INSERT INTO user_books (
+    user_id,
+    title,
+    isbn,
+    description,
+    cover_url,
+    publication_year,
+    author_id,
+    genre_id,
+    previous_status_id,
+    status_id,
+    rating,
+    is_favorite,
+    lent_to_contact_id
+) VALUES
+(1, 'Фундація', '978-0-553-80371-0', 'Класичний цикл наукової фантастики.', 'https://example.com/covers/foundation.jpg', 1951, 1, 1, NULL, 2, 5, TRUE, NULL),
+(1, 'Вбивство у Східному експресі', '978-0-00-711931-8', 'Еркюль Пуаро розслідує загадкове вбивство.', 'https://example.com/covers/orient-express.jpg', 1934, 2, 2, 2, 4, 4, FALSE, 1),
+(1, '1984', '978-0-452-28423-4', 'Антиутопія про тоталітарне суспільство.', 'https://example.com/covers/1984.jpg', 1949, 3, 3, 1, 3, 5, TRUE, NULL),
+(2, 'Мислення швидке й повільне', '978-0-374-27563-1', 'Книга про дві системи мислення.', 'https://example.com/covers/thinking-fast-slow.jpg', 2011, 4, 7, NULL, 2, NULL, FALSE, NULL),
+(2, '7 звичок надзвичайно ефективних людей', '978-1-9821-3947-9', 'Практичні принципи особистої ефективності.', 'https://example.com/covers/7-habits.jpg', 1989, 5, 8, 2, 4, 5, TRUE, 3);
+
+INSERT INTO notes (user_book_id, content) VALUES
+(1, 'Початок дуже захопливий, гарна побудова світу.'),
+(1, 'Перечитати розділ про Селдона перед обговоренням у клубі.'),
+(3, 'Сильна атмосфера контролю та пропаганди, актуально і сьогодні.'),
+(4, 'Корисно виписати приклади когнітивних упереджень.');
+
+INSERT INTO notifications (user_id, title, message, is_read) VALUES
+(1, 'Нагадування про повернення', 'Книгу "Вбивство у Східному експресі" очікують повернути через 7 днів.', FALSE),
+(1, 'Нова замітка додана', 'Ви додали нову замітку до книги "Фундація".', TRUE),
+(2, 'Книга в займах', 'Книгу "7 звичок надзвичайно ефективних людей" позичено контакту Сергій Бондар.', FALSE);

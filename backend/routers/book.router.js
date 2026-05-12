@@ -14,6 +14,7 @@ router.get('/statuses', bookController.getStatuses)
 
 // Книги користувача
 router.get('/', bookController.getAllBooks)
+router.get('/book/external', bookController.externalSearch)
 router.post('/', uploadImage.single('cover'), bookController.createBook)
 router.get('/:id', bookController.getBookById)
 router.put('/:id', bookController.updateBook)
@@ -31,5 +32,6 @@ router.put('/:id/favorite', bookController.toggleFavorite)
 // Замітки
 router.get('/:id/notes', bookController.getNotes)
 router.post('/:id/notes', bookController.addNote)
+router.delete('/:id/notes/:noteId', bookController.deleteNote)
 
 export default router

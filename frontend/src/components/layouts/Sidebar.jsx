@@ -1,12 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { IconBook, IconUser, IconClose, IconLogout } from '../icons';
+import { IconBook, IconUser, IconClose, IconLogout, IconSparkles } from '../icons';
 import { getInitials } from '../../utils/format';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Каталог', Icon: IconBook },
-  { to: '/profile', label: 'Профіль', Icon: IconUser },
+  { to: '/', label: 'Каталог', icon: 'book' },
+  { to: '/recommendations', label: 'Рекомендації', icon: 'sparkles' },
+  { to: '/profile', label: 'Профіль', icon: 'user' },
 ];
+
+function renderNavIcon(iconName) {
+  if (iconName === 'sparkles') return <IconSparkles size={18} />;
+  if (iconName === 'user') return <IconUser size={18} />;
+  return <IconBook size={18} />;
+}
 
 export default function Sidebar({ isOpen, onClose }) {
   const { pathname } = useLocation();
@@ -25,14 +32,14 @@ export default function Sidebar({ isOpen, onClose }) {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_LINKS.map(({ to, label, Icon }) => (
+        {NAV_LINKS.map(({ to, label, icon }) => (
           <Link
             key={to}
             className={`sidebar-link${pathname === to ? ' sidebar-link--active' : ''}`}
             to={to}
             onClick={onClose}
           >
-            <Icon size={18} />
+            {renderNavIcon(icon)}
             <span>{label}</span>
           </Link>
         ))}

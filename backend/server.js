@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser'
 import bookRouter from './routers/book.router.js'
 import profileRouter from './routers/profile.router.js'
 import authRouter from './routers/auth.router.js'
+import recomendationRouter from './routers/recomendation.router.js'
+import cronService from './services/cron.service.js';
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -30,7 +32,9 @@ app.use(cookieParser())
 app.use('/api/profile', profileRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/books', bookRouter)
+app.use('/api/recommendations', recomendationRouter)
 
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`)
+    cronService.start();
 })

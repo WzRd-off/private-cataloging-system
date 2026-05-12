@@ -442,8 +442,9 @@ class BookController {
             const userBookId = req.params.id
             const { rating } = req.body
 
-            const numericRating = parseInt(rating, 10)
-            if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+            const numericRating = (rating === null || rating === 0) ? null : parseInt(rating, 10)
+            
+            if (numericRating !== null && (isNaN(numericRating) || numericRating < 1 || numericRating > 5)) {
                 return res.status(400).json({ message: 'Недійсний рейтинг. Введіть число від 1 до 5' })
             }
 
@@ -465,6 +466,90 @@ class BookController {
             res.status(500).json({ message: 'Внутрішня помилка сервера' })
         }
     }
+
+    async deleteNote(req, res) {
+        try {
+            const userId = req.user.id
+            const userBookId = req.params.id
+            const noteId = req.params.noteId
+
+            const { rows: bookRows } = await db.query(
+                'SELECT id FROM user_books WHERE id = $1 AND user_id = $2',
+                [userBookId, userId]
+            )
+            if (bookRows.length === 0) {
+                return res.status(404).json({ message: 'Книгу не знайдено' })
+            }
+
+            const { rows } = await db.query(
+                'DELETE FROM notes WHERE id = $1 AND user_book_id = $2 RETURNING id',
+                [noteId, userBookId]
+            )
+
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'Замітку не знайдено' })
+            }
+
+            res.json({ message: 'Замітку видалено' })
+        } catch (error) {
+            console.error('Помилка видалення замітки:', error)
+            res.status(500).json({ message: 'Внутрішня помилка сервера' })
+        }
+    }
+    async externalSearch(req, res) {
+        try {
+            const { query, type } = req.query; 
+            
+            if (!query) {
+                return res.status(400).json({ message: 'Потрібен запит для пошуку' });
+            }
+
+            let data = { items: [] };
+            let urlsToTry = [];
+            const safeQuery = encodeURIComponent(query);
+
+            if (type === 'isbn') {
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=isbn:${safeQuery}&maxResults=1`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&maxResults=1`);
+            } else {
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&langRestrict=uk&maxResults=1`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=intitle:${safeQuery}&maxResults=1`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&maxResults=1`);
+            }
+
+            for (const url of urlsToTry) {
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.items && result.items.length > 0) {
+                    data = result;
+                    break;
+                }
+            }
+
+            if (!data.items || data.items.length === 0) {
+                return res.status(404).json({ message: 'Книгу не знайдено в базі' });
+            }
+
+            const info = data.items[0].volumeInfo;
+            console.log(`📖 Результат: ${info.title} | Автор: ${info.authors ? info.authors.join(', ') : 'Немає'}`);
+
+            const mappedBook = {
+                title: info.title || '',
+                isbn: info.industryIdentifiers?.find(id => id.type === 'ISBN_13' || id.type === 'ISBN_10')?.identifier || '',
+                description: info.description || '',
+                publication_year: info.publishedDate ? info.publishedDate.split('-')[0] : '',
+                author_name: info.authors ? info.authors[0] : '',
+                genre_name: info.categories ? info.categories[0] : '',
+            };
+
+            res.json(mappedBook);
+        } catch (error) {
+            console.error('Помилка зовнішнього пошуку:', error);
+            res.status(500).json({ message: 'Помилка при зверненні до зовнішньої бази' });
+        }
+    }
+
 }
 
 export default new BookController()
