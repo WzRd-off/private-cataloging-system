@@ -21,14 +21,14 @@ class CronService {
 
             for (const row of rows) {
                 await db.query(
-                    `INSERT INTO notifications (user_id, title, message, type) 
-                     VALUES ($1, $2, $3, $4)`,
+                    `INSERT INTO notifications (user_id, title, message)
+                     VALUES ($1, $2, $3)`,
                     [
-                        row.user_id, 
-                        'Нагадування про повернення', 
-                        `Завтра ${row.contact_name} має повернути вам книгу "${row.title}".`
+                        row.user_id,
+                        'Нагадування про повернення',
+                        `Завтра ${row.contact_name} має повернути вам книгу "${row.title}".`,
                     ]
-                );
+                )
             }
             
             if (rows.length > 0) {

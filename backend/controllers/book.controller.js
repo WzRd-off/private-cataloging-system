@@ -14,6 +14,40 @@ async function resolveStatusId({ status_id, status }) {
     return null
 }
 
+async function resolveOrCreateAuthorId({ author_id, author_name }) {
+    const parsed =
+        author_id !== undefined && author_id !== null && author_id !== ''
+            ? parseInt(String(author_id), 10)
+            : NaN
+    if (Number.isInteger(parsed) && parsed > 0) {
+        const { rows } = await db.query('SELECT id FROM authors WHERE id = $1', [parsed])
+        if (rows.length) return parsed
+    }
+    const name = typeof author_name === 'string' ? author_name.trim() : ''
+    if (!name) return null
+    const { rows: found } = await db.query(
+        'SELECT id FROM authors WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+        [name]
+    )
+    if (found.length) return found[0].id
+    try {
+        const { rows } = await db.query(
+            'INSERT INTO authors (name) VALUES ($1) RETURNING id',
+            [name]
+        )
+        return rows[0].id
+    } catch (e) {
+        if (e.code === '23505') {
+            const { rows: again } = await db.query(
+                'SELECT id FROM authors WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1',
+                [name]
+            )
+            return again[0]?.id ?? null
+        }
+        throw e
+    }
+}
+
 class BookController {
     async getAllBooks(req, res) {
         try {
@@ -92,7 +126,7 @@ class BookController {
             const userId = req.user.id
             const {
                 title, isbn, description, publication_year,
-                author_id, genre_id, status_id, status,
+                author_id, author_name, genre_id, status_id, status,
                 rating, is_favorite
             } = req.body
 
@@ -101,6 +135,7 @@ class BookController {
             }
 
             const resolvedStatusId = await resolveStatusId({ status_id, status })
+            const resolvedAuthorId = await resolveOrCreateAuthorId({ author_id, author_name })
             const coverUrl = req.file
                 ? `/images/${req.file.filename}`
                 : (req.body.cover_url || null)
@@ -115,7 +150,7 @@ class BookController {
                  RETURNING id`,
                 [
                     userId, title, isbn || null, description || null, coverUrl,
-                    toInt(publication_year), toInt(author_id), toInt(genre_id), resolvedStatusId,
+                    toInt(publication_year), resolvedAuthorId, toInt(genre_id), resolvedStatusId,
                     toInt(rating), toBool(is_favorite)
                 ]
             )
@@ -504,23 +539,37 @@ class BookController {
                 return res.status(400).json({ message: 'Потрібен запит для пошуку' });
             }
 
+            const apiKey = process.env.GOOGLE_BOOKS_API_KEY
+            const keySuffix = apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''
+
             let data = { items: [] };
             let urlsToTry = [];
             const safeQuery = encodeURIComponent(query);
 
             if (type === 'isbn') {
-                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=isbn:${safeQuery}&maxResults=1`);
-                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&maxResults=1`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=isbn:${safeQuery}&langRestrict=uk&maxResults=3`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&langRestrict=uk&maxResults=3`);
             } else {
-                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&langRestrict=uk&maxResults=1`);
-                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=intitle:${safeQuery}&maxResults=1`);
-                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&maxResults=1`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=intitle:${safeQuery}&langRestrict=uk&maxResults=3`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&langRestrict=uk&maxResults=3`);
+                urlsToTry.push(`https://www.googleapis.com/books/v1/volumes?q=${safeQuery}&langRestrict=uk&maxResults=3`);
             }
 
             for (const url of urlsToTry) {
-                const response = await fetch(url);
-                const result = await response.json();
-                
+                const response = await fetch(url + keySuffix);
+                const result = await response.json().catch(() => ({}));
+
+                if (result.error) {
+                    const code = result.error.code
+                    if (code === 429 || code === 403) {
+                        return res.status(503).json({
+                            message:
+                                'Google Books тимчасово недоступний (ліміт запитів). Створіть ключ API у Google Cloud Console (Books API) і додайте GOOGLE_BOOKS_API_KEY у .env на бекенді.',
+                        })
+                    }
+                    continue
+                }
+
                 if (result.items && result.items.length > 0) {
                     data = result;
                     break;
@@ -528,7 +577,11 @@ class BookController {
             }
 
             if (!data.items || data.items.length === 0) {
-                return res.status(404).json({ message: 'Книгу не знайдено в базі' });
+                return res.status(404).json({
+                    message: apiKey
+                        ? 'За цим запитом нічого не знайдено в Google Books'
+                        : 'За цим запитом нічого не знайдено в Google Books (або сервіс відхилив запит без ключа API)',
+                });
             }
 
             const info = data.items[0].volumeInfo;
