@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { IconMenu } from '../icons';
+import NotificationBell from '../NotificationBell';
 
 export default function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +16,8 @@ export default function MainLayout({ children }) {
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={close} aria-hidden="true" />
       )}
+
+      <NotificationBell />
 
       <main className="layout-content">
         <button className="mobile-menu-btn" onClick={open} aria-label="Відкрити меню">

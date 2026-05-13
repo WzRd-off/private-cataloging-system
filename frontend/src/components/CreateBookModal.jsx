@@ -98,7 +98,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
         publication_year: prev.publication_year || (data.publication_year ? String(data.publication_year) : '')
       }));
     } catch (err) {
-      setError('Не знайдено');
+      setError(err.message || 'Не знайдено');
     } finally {
       setIsSearching(false);
     }
@@ -115,6 +115,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
     try {
       const author_id = authors.find((a) => a.name === form.author_name)?.id ?? null;
       const genre_id = genres.find((g) => g.name === form.genre_name)?.id ?? null;
+      const authorTrim = form.author_name?.trim() || '';
 
       const payload = {
         title: form.title.trim(),
@@ -122,6 +123,7 @@ export default function CreateBookModal({ open, onClose, onSuccess }) {
         description: form.description.trim() || null,
         publication_year: form.publication_year ? Number(form.publication_year) : null,
         author_id,
+        ...(authorTrim && { author_name: authorTrim }),
         genre_id,
         status: form.status,
         rating: form.rating ? Number(form.rating) : null,

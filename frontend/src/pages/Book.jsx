@@ -138,7 +138,7 @@ const handleStatusChange = async (e) => {
     }
     try {
       await booksAPI.deleteBook(id);
-      navigate('/catalog');
+      navigate('/');
     } catch (err) {
       console.error('Помилка видалення книги:', err);
       alert('Не вдалося видалити книгу');
@@ -200,7 +200,7 @@ const handleStatusChange = async (e) => {
     <MainLayout>
     <div className="book-page">
       <div className="book-header">
-        <Link className="back-btn" to="/catalog">
+        <Link className="back-btn" to="/">
           <IconBack /> До каталогу
         </Link>
 
